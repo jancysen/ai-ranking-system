@@ -157,4 +157,78 @@ def test_dynamic_jd_parser():
     assert "bangalore" in parsed["secondary_locations"]
     assert "pytorch" in parsed["preferred_skills"]
 
+def test_gemini_jd_parser_missing_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    custom_jd = """
+    Role: Data Scientist
+    Company: Uber
+    Experience: 4+ years
+    """
+    parsed = parse_jd(custom_jd)
+    # Falls back to regex parser
+    assert parsed["title"] == "Data Scientist"
+    assert parsed["company"] == "Uber"
+    assert parsed["min_experience"] == 4.0
+
+def test_gemini_jd_parser_mocked(monkeypatch):
+    # Mock GEMINI_API_KEY environment variable
+    monkeypatch.setenv("GEMINI_API_KEY", "mock_key")
+    
+    # Mock urllib.request.urlopen to return a mock JSON response
+    class MockResponse:
+        def read(self):
+            return b"""
+            {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": "{\\\"title\\\": \\\"Senior AI Research Scientist\\\", \\\"company\\\": \\\"Google DeepMind\\\", \\\"min_experience\\\": 6.0, \\\"max_experience\\\": 12.0, \\\"primary_locations\\\": [\\\"London\\\"], \\\"secondary_locations\\\": [\\\"Mountain View\\\"], \\\"core_required_skills\\\": [\\\"jax\\\", \\\"deep learning\\\"], \\\"preferred_skills\\\": [\\\"rl\\\"], \\\"blacklisted_companies\\\": []}"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+            """
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    def mock_urlopen(req, timeout=None):
+        return MockResponse()
+
+    import urllib.request
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+    
+    custom_jd = "Role: Senior AI Research Scientist at Google DeepMind."
+    parsed = parse_jd(custom_jd)
+    
+    assert parsed["title"] == "Senior AI Research Scientist"
+    assert parsed["company"] == "Google DeepMind"
+    assert parsed["min_experience"] == 6.0
+    assert parsed["max_experience"] == 12.0
+    assert "london" in parsed["primary_locations"]
+    assert "jax" in parsed["core_required_skills"]
+
+def test_evaluation_metrics():
+    from evaluate import calculate_dcg, calculate_ndcg, calculate_mrr
+    
+    # 1. Simple DCG / NDCG test
+    relevances = [3, 2, 0, 1]
+    
+    ndcg_2 = calculate_ndcg(relevances, 2)
+    assert 0.0 <= ndcg_2 <= 1.0
+    
+    # Ideal NDCG must be 1.0
+    assert calculate_ndcg([3, 2, 1, 0], 4) == 1.0
+    
+    # 2. MRR test
+    assert calculate_mrr([0, 0, 2, 3], threshold=2) == 1.0 / 3
+    assert calculate_mrr([0, 0, 1, 0], threshold=2) == 0.0
+    assert calculate_mrr([3, 0, 0, 0], threshold=2) == 1.0
+
+
 

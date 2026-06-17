@@ -1,4 +1,7 @@
 import re
+import os
+import json
+import urllib.request
 
 def get_target_jd():
     """Returns the parsed structured representation of the target Redrob JD."""
@@ -25,6 +28,112 @@ def get_target_jd():
         ]
     }
 
+def parse_jd_with_gemini(jd_text):
+    """
+    Calls the Gemini 1.5 Flash API to parse the JD dynamically.
+    Returns the parsed dictionary, or None if the API call fails or is unavailable.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return None
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    prompt = (
+        "Parse the following Job Description (JD) text and extract the key information in JSON format matching the schema details.\n\n"
+        f"JD TEXT:\n{jd_text}\n\n"
+        "Schema details:\n"
+        "- title: Job title (string)\n"
+        "- company: Company name (string)\n"
+        "- min_experience: Minimum experience in years (number)\n"
+        "- max_experience: Maximum experience in years (number)\n"
+        "- primary_locations: Primary locations requested (list of lowercase strings)\n"
+        "- secondary_locations: Secondary / preferred locations (list of lowercase strings)\n"
+        "- core_required_skills: Core required skills (list of lowercase strings)\n"
+        "- preferred_skills: Preferred/nice-to-have skills (list of lowercase strings)\n"
+        "- blacklisted_companies: Service-based/unwanted companies to exclude (list of lowercase strings)"
+    )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "OBJECT",
+                "properties": {
+                    "title": {"type": "STRING"},
+                    "company": {"type": "STRING"},
+                    "min_experience": {"type": "NUMBER"},
+                    "max_experience": {"type": "NUMBER"},
+                    "primary_locations": {"type": "ARRAY", "items": {"type": "STRING"}},
+                    "secondary_locations": {"type": "ARRAY", "items": {"type": "STRING"}},
+                    "core_required_skills": {"type": "ARRAY", "items": {"type": "STRING"}},
+                    "preferred_skills": {"type": "ARRAY", "items": {"type": "STRING"}},
+                    "blacklisted_companies": {"type": "ARRAY", "items": {"type": "STRING"}}
+                },
+                "required": [
+                    "title", "company", "min_experience", "max_experience", 
+                    "primary_locations", "secondary_locations", "core_required_skills", 
+                    "preferred_skills", "blacklisted_companies"
+                ]
+            }
+        }
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        # Timeout after 10 seconds
+        with urllib.request.urlopen(req, timeout=10) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            
+            # Extract text content from the Gemini response structure
+            candidates = res_data.get("candidates", [])
+            if not candidates:
+                return None
+                
+            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            if not text:
+                return None
+                
+            parsed = json.loads(text.strip())
+            
+            # Clean up the output types to match expected formats
+            cleaned = {
+                "title": str(parsed.get("title", "Dynamic Position")).strip(),
+                "company": str(parsed.get("company", "Dynamic Company")).strip(),
+                "min_experience": float(parsed.get("min_experience", 5.0)),
+                "max_experience": float(parsed.get("max_experience", 9.0)),
+                "primary_locations": [str(x).lower().strip() for x in parsed.get("primary_locations", []) if x],
+                "secondary_locations": [str(x).lower().strip() for x in parsed.get("secondary_locations", []) if x],
+                "core_required_skills": [str(x).lower().strip() for x in parsed.get("core_required_skills", []) if x],
+                "preferred_skills": [str(x).lower().strip() for x in parsed.get("preferred_skills", []) if x],
+                "blacklisted_companies": [str(x).lower().strip() for x in parsed.get("blacklisted_companies", []) if x]
+            }
+            
+            if not cleaned["core_required_skills"]:
+                cleaned["core_required_skills"] = ["python"]
+            if not cleaned["primary_locations"]:
+                cleaned["primary_locations"] = ["noida", "pune"]
+                
+            return cleaned
+            
+    except Exception as e:
+        print(f"WARNING: Gemini JD parser API call failed: {e}. Falling back to regex parser.")
+        return None
+
 def parse_jd(jd_text):
     """
     Tries to extract key structured requirements from arbitrary JD text dynamically.
@@ -38,6 +147,12 @@ def parse_jd(jd_text):
     # Check if this is the target Redrob hackathon JD
     if "redrob" in jd_lower and "founding team" in jd_lower:
         return get_target_jd()
+        
+    # Attempt parsing with Gemini first if key is present
+    if os.environ.get("GEMINI_API_KEY"):
+        gemini_parsed = parse_jd_with_gemini(jd_text)
+        if gemini_parsed:
+            return gemini_parsed
         
     parsed = {
         "title": "Dynamic Position",
