@@ -4,7 +4,7 @@
 
 This repository contains our submission for **The Data & AI Challenge**. The system parses a job description, screens out simulated "honeypot" profiles, filters candidate eligibility based on experience level and company history, and outputs a trusted, ranked list of the top 100 candidates with fact-based natural language reasonings.
 
-The pipeline is a hybrid, two-stage system combining deterministic rules with local vector embeddings (semantic search) and dynamic LLM Job Description parsing, optimized to run completely offline on CPU.
+The pipeline is a hybrid, two-stage system combining deterministic rules with local vector embeddings (semantic search) and dynamic Gemini LLM Job Description parsing, optimized to run 100% offline on CPU.
 
 ---
 
