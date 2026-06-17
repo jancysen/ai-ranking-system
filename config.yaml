@@ -1,0 +1,35 @@
+# Configuration for AI-Powered Candidate Ranking System
+
+participant_id: "team_antigravity"
+candidates_file: "data/candidates.jsonl"
+output_file: "outputs/team_antigravity.csv"
+
+# Weights for base scoring components (must sum to 1.0)
+weights:
+  skills: 0.35          # Technical skills & endorsements alignment
+  title: 0.25           # Professional title history relevance
+  experience: 0.15      # Seniority & years of experience alignment
+  education: 0.10       # Education tiering (tier_1 to tier_4)
+  location: 0.10        # Noida/Pune proximity & relocation preference
+  notice_period: 0.05   # Notice period / availability match
+
+# Excluded consulting/service companies (disqualified if entire history is with these)
+excluded_companies:
+  - "tcs"
+  - "tata consultancy services"
+  - "infosys"
+  - "wipro"
+  - "accenture"
+  - "cognizant"
+  - "capgemini"
+  - "hcl"
+  - "hcltech"
+  - "tech mahindra"
+  - "l&t"
+  - "lnt"
+  - "l&t technology services"
+  - "mindtree"
+  - "mphasis"
+  - "cognizant technology solutions"
+  - "wipro technologies"
+  - "infosys technologies"

@@ -1,0 +1,26 @@
+# Python caching and tests
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.pytest/
+
+# Large dataset files
+data/candidates.jsonl
+data/candidates.jsonl.gz
+dataset.zip
+dataset_real.zip
+
+# Challenge bundle source folder and MACOSX metadata
+*India_runs_data_and_ai_challenge*
+*MACOSX*
+
+# OS specific files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Thumbs.db
+
+# Output deliverables (keep the csv, ignore temp files)
+*.log
+scratch/
