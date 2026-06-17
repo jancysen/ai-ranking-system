@@ -81,7 +81,7 @@ graph TD
 
 # Slide 7: Ablation Study & Weight Optimization
 
-To justify our configuration weights, we evaluated three configurations against our 20-candidate labeled ground truth (containing 10 excellent fits, 3 moderate fits, 2 weak fits, and 5 disqualified/honeypot controls):
+To justify our configuration weights, we evaluated three configurations against our 20-candidate annotated ground truth set (containing 10 excellent fits, 3 moderate fits, 2 weak fits, and 5 disqualified/honeypot controls):
 
 | Configuration | NDCG@10 | NDCG@50 | MRR | Key Insight |
 |---|---|---|---|---|
@@ -89,7 +89,7 @@ To justify our configuration weights, we evaluated three configurations against 
 | **Config B: Skill-Heavy** (Skills 60%, others 8%) | 0.9125 | 0.8920 | 1.0000 | Ignores title history and seniority targets, ranking junior developer experts above experienced AI engineers. |
 | **Config C: Our Hybrid Optimized Weights** | **1.0000** | **0.9459** | **1.0000** | Optimally balances skills and title alignment while using semantic re-ranking to capture adjacent talent. |
 
-*Our configuration (Config C) achieves a perfect NDCG@10 and MRR, and a strong NDCG@50 of 0.9459.*
+*Note: NDCG/MRR scores are calculated against our annotated 20-candidate ground truth set, created to test specific ranking boundaries. Config C achieves a perfect NDCG@10 and MRR, and a strong NDCG@50 of 0.9459 on this set.*
 
 ---
 
