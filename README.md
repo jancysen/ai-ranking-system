@@ -41,13 +41,15 @@ Generates natural-sounding 1-2 sentence notes for the top 100 candidates. The ge
 
 ## Ablation Study & Weight Optimization
 
-To justify our config weights, we evaluated three configurations against our 20-candidate labeled ground truth (containing 10 excellent fits, 3 moderate fits, 2 weak fits, and 5 disqualified/honeypot controls):
+To justify our config weights, we evaluated three configurations against our annotated 20-candidate ground truth set (containing 10 excellent fits, 3 moderate fits, 2 weak fits, and 5 disqualified/honeypot controls):
 
 | Configuration | NDCG@10 | NDCG@50 | MRR | Key Insight |
 |---|---|---|---|---|
 | **Config A: Equal Weights** (16.6% each) | 0.8241 | 0.7854 | 0.5000 | Over-indexes on location/notice, placing unqualified local candidates above highly-skilled candidates with 90-day notices. |
 | **Config B: Skill-Heavy** (Skills 60%, others 8%) | 0.9125 | 0.8920 | 1.0000 | Ignores title history and seniority targets, ranking junior developer experts above experienced AI engineers. |
 | **Config C: Our Hybrid Optimized Weights** | **1.0000** | **0.9459** | **1.0000** | Optimally balances skills and title alignment while using semantic re-ranking to capture adjacent talent. |
+
+*Note: NDCG and MRR scores are self-evaluated on a 20-candidate annotated set created to validate specific ranking boundaries, such as ensuring 100% suppression of honeypots and verifying the order of top fits.*
 
 ---
 
@@ -118,6 +120,23 @@ To measure the ranking quality of the submission output:
 ```bash
 python evaluate.py
 ```
+
+---
+
+## Running the Streamlit Recruiter Dashboard
+
+We have included an interactive recruiter discovery and ranking sandbox web app built with Streamlit. To run the dashboard locally:
+
+```bash
+streamlit run app.py
+```
+
+### Dashboard Features:
+* **Interactive JD Parsing**: Paste any job description to see dynamic LLM/regex key requirement extraction.
+* **Database Uploads**: Scan the built-in 50-candidate sample or upload custom `.jsonl` files.
+* **Dynamic Weight Adjustment**: Tune alignment weights (Skills, Title, YOE, Edu, Location, Notice Period) in real-time via sidebar sliders.
+* **Stage-2 Re-ranking Toggle**: Enable or disable the local semantic re-ranking engine to compare results.
+* **Shortlist Analytics**: Explore ranked tables, breakdown scores, and hover over fact-based reasonings.
 
 ---
 
