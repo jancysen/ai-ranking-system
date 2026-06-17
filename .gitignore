@@ -24,3 +24,4 @@ Thumbs.db
 # Output deliverables (keep the csv, ignore temp files)
 *.log
 scratch/
+outputs/sample_ranked.csv

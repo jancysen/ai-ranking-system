@@ -146,82 +146,87 @@ def score_candidate(candidate, jd, weights):
 def generate_reasoning(candidate, jd, score, breakdown):
     """
     Generates a personalized, highly accurate 1-2 sentence justification for the candidate's rank.
-    Ensures zero hallucination by pulling text strictly from candidate data.
+    Differentiates candidates highlighting their top assets (GitHub, Assessments, Education, or Responsiveness)
+    to ensure highly varied, non-repetitive descriptions across the spreadsheet.
     """
-    profile_title = candidate.get("current_title", "Engineer")
+    profile_title = candidate.get("current_title", "Software Engineer")
     yoe = candidate.get("years_of_experience", 0)
     skills = candidate.get("skills", [])
     signals = candidate.get("redrob_signals", {})
     location = candidate.get("location", "")
     notice = signals.get("notice_period_days", 60)
     response_rate = signals.get("recruiter_response_rate", 0.5)
+    response_time = signals.get("avg_response_time_hours", 24.0)
+    github_score = signals.get("github_activity_score", -1)
+    assessments = signals.get("skill_assessment_scores", {})
     
-    # 1. Identify key matching skills actually in the profile
+    # 1. Identify key matching skills
     candidate_skill_names = {s["name"].lower() for s in skills}
-    core_matches = []
-    for s in jd["core_required_skills"]:
-        if s.lower() in candidate_skill_names:
-            core_matches.append(s)
-            
-    pref_matches = []
-    for s in jd["preferred_skills"]:
-        if s.lower() in candidate_skill_names:
-            pref_matches.append(s)
-            
+    core_matches = [s for s in jd["core_required_skills"] if s.lower() in candidate_skill_names]
+    pref_matches = [s for s in jd["preferred_skills"] if s.lower() in candidate_skill_names]
     all_matches = core_matches + pref_matches
-    # Get top 2-3 matched skills to highlight
     highlight_skills = all_matches[:3]
-    skills_phrase = ""
-    if highlight_skills:
-        skills_phrase = f"strong in {', '.join(highlight_skills)}"
-        
-    # 2. Get school tier representation
+    skills_phrase = f"strong in {', '.join(highlight_skills)}" if highlight_skills else "matching adjacent engineering skills"
+
+    # 2. Find education info
     education = candidate.get("education", [])
     edu_phrase = ""
+    edu_inst = ""
     if education:
-        tier_ranks = {"tier_1": "Tier-1", "tier_2": "Tier-2", "tier_3": "Tier-3"}
-        best_tier_label = ""
+        tier_ranks = {"tier_1": "Tier-1", "tier_2": "Tier-2"}
         for edu in education:
             t = edu.get("tier", "unknown")
             if t in tier_ranks:
-                best_tier_label = tier_ranks[t]
+                edu_phrase = f"academic background from a {tier_ranks[t]} school"
+                edu_inst = edu.get("institution", "")
                 break
-        if best_tier_label:
-            edu_phrase = f"academic background from a {best_tier_label} school"
 
-    # 3. Notice period status
-    notice_phrase = f"{notice}-day notice" if notice > 0 else "immediate availability"
-    
-    # 4. Strengths vs Gaps
-    has_low_response = response_rate < 0.3
-    has_long_notice = notice > 60
-    
-    # Select different templates based on candidate rank/score to ensure high variety
-    if score > 0.85:
-        # High tier candidates (top fits)
-        patterns = [
-            f"Outstanding {profile_title} with {yoe:.1f} years of experience; {skills_phrase} and based in {location} with {notice_phrase}.",
-            f"Strong fit with {yoe:.1f} years in software engineering; {skills_phrase}, {edu_phrase}, and highly active on Redrob ({int(response_rate*100)}% response rate).",
-            f"Senior candidate matching the {yoe:.1f}-year profile perfectly; {skills_phrase} with a {notice_phrase} and based in a target location ({location})."
-        ]
-    elif score > 0.65:
-        # Mid-high tier candidates
-        patterns = [
-            f"Solid {profile_title} ({yoe:.1f} yrs YOE) with skills in {', '.join(highlight_skills[:2])}; based in {location} with {notice_phrase}.",
-            f"Good ML/software background with {yoe:.1f} years of experience; has expertise in {', '.join(highlight_skills[:2])} and strong platform signals.",
-            f"Requisite engineering profile with {yoe:.1f} years; {skills_phrase} but has a slightly longer {notice_phrase} ({notice} days)."
-        ]
+    # 3. Find top assessment score
+    top_assess_skill = ""
+    top_assess_score = 0
+    if assessments:
+        for sname, sscore in assessments.items():
+            if sscore > top_assess_score:
+                top_assess_score = sscore
+                top_assess_skill = sname
+
+    # 4. Construct lead clause based on top differentiator
+    lead_clause = ""
+    if github_score > 45:
+        lead_clause = f"Active open-source contributor with a high GitHub activity score of {github_score:.0f} and {yoe:.1f} years as a {profile_title}"
+    elif top_assess_score > 75 and top_assess_skill:
+        lead_clause = f"Proven technical expert with a {top_assess_score:.0f}% score on the Redrob {top_assess_skill} assessment and {yoe:.1f} years experience"
+    elif edu_phrase and edu_inst:
+        lead_clause = f"Educated at elite {edu_inst} ({edu_phrase}) with a strong {yoe:.1f}-year engineering trajectory"
+    elif response_rate > 0.75:
+        lead_clause = f"Highly responsive candidate ({int(response_rate*100)}% response rate, {response_time:.1f}h avg response) with {yoe:.1f} years experience"
     else:
-        # Lower tier candidates (filler)
-        patterns = [
-            f"{profile_title} with {yoe:.1f} years of experience; matches adjacent skills but has fewer core AI retrieval matches.",
-            f"Software background with {yoe:.1f} years of experience; some skill overlap but down-weighted due to {notice_phrase} or location fit.",
-            f"Candidate has {yoe:.1f} years experience but holds adjacent skills only; notice period is {notice} days and recruiter responsiveness is lower."
-        ]
+        lead_clause = f"Competent {profile_title} with {yoe:.1f} years of experience"
+
+    # 5. Construct middle clause summarizing skills
+    middle_clause = f", demonstrated by being {skills_phrase}"
+
+    # 6. Construct close clause summarizing logistics and minor gaps
+    logistics_parts = []
+    if location:
+        logistics_parts.append(f"based in {location}")
+    if notice <= 30:
+        logistics_parts.append("immediately available (<=30d notice)")
+    else:
+        logistics_parts.append(f"subject to a {notice}-day notice period")
         
-    # Pick a template deterministically based on candidate ID to ensure both high variation and repeatability
-    val = sum(ord(c) for c in candidate["candidate_id"])
-    idx = val % len(patterns)
-    reasoning = patterns[idx]
-    
+    logistics_clause = f"; {', '.join(logistics_parts)}"
+
+    # 7. Add concern/gap note if any
+    gap_note = ""
+    if notice > 90:
+        gap_note = f" (Note: longer {notice}-day notice is a minor constraint)"
+    elif yoe > jd["max_experience"] + 3:
+        gap_note = " (Note: experience is significantly above target range)"
+    elif yoe < jd["min_experience"]:
+        gap_note = " (Note: candidate is slightly more junior than target)"
+
+    # Combine
+    reasoning = f"{lead_clause}{middle_clause}{logistics_clause}{gap_note}."
     return reasoning
+

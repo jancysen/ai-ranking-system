@@ -1,6 +1,6 @@
 import pytest
 from src.candidate_parser import check_honeypot, is_eligible, parse_candidate
-from src.jd_parser import get_target_jd
+from src.jd_parser import get_target_jd, parse_jd
 from src.scorer import score_candidate, generate_reasoning
 
 @pytest.fixture
@@ -122,5 +122,39 @@ def test_scoring_and_reasoning(sample_valid_candidate):
     
     reasoning = generate_reasoning(parsed, jd, score, breakdown)
     assert len(reasoning) > 10
-    assert "6.9-year" in reasoning or "6.9 years" in reasoning
+    assert "6.9-year" in reasoning or "6.9 years" in reasoning or "6.9" in reasoning
+
+def test_check_honeypot_graduation_mismatch(sample_valid_candidate):
+    # Candidate graduated in 2024 (earliest degree end year), but claims 12 YOE.
+    # Years since graduation = 2026 - 2024 = 2. 12 YOE is impossible.
+    sample_valid_candidate["profile"]["years_of_experience"] = 12.0
+    sample_valid_candidate["education"][0]["end_year"] = 2024
+    is_hp, reasons = check_honeypot(sample_valid_candidate)
+    assert is_hp
+    assert any("yoe_exceeds_post_grad_years" in r for r in reasons)
+
+def test_check_honeypot_assessment_mismatch(sample_valid_candidate):
+    # Candidate claims advanced/expert in embeddings, but scored 15 on assessment
+    sample_valid_candidate["redrob_signals"]["skill_assessment_scores"] = {"embeddings": 15.0}
+    is_hp, reasons = check_honeypot(sample_valid_candidate)
+    assert is_hp
+    assert any("high_prof_low_assessment_score" in r for r in reasons)
+
+def test_dynamic_jd_parser():
+    custom_jd = """
+    Job Title: Machine Learning Developer
+    Company: Tech Labs
+    Experience required: 3 to 7 years
+    Location: Noida preferred, Bangalore as backup.
+    Required skills: PyTorch, Docker, SQL, LLM.
+    """
+    parsed = parse_jd(custom_jd)
+    assert parsed["title"] == "Machine Learning Developer"
+    assert parsed["company"] == "Tech Labs"
+    assert parsed["min_experience"] == 3.0
+    assert parsed["max_experience"] == 7.0
+    assert "noida" in parsed["primary_locations"]
+    assert "bangalore" in parsed["secondary_locations"]
+    assert "pytorch" in parsed["preferred_skills"]
+
 

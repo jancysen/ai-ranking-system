@@ -1,5 +1,6 @@
 import argparse
 import sys
+import os
 from src.pipeline import run_pipeline
 
 def main():
@@ -18,11 +19,24 @@ def main():
         default="outputs/team_antigravity.csv",
         help="Output CSV file path."
     )
+    parser.add_argument(
+        "--sample",
+        action="store_true",
+        help="Run quickly on sample data (data/sample_candidates.json) for testing."
+    )
     
     args = parser.parse_args()
     
+    candidates_file = args.candidates
+    output_file = args.out
+    
+    if args.sample:
+        candidates_file = "data/sample_candidates.json"
+        output_file = "outputs/sample_ranked.csv"
+        print("Running pipeline on SAMPLE data...")
+        
     try:
-        run_pipeline(args.candidates, args.out)
+        run_pipeline(candidates_file, output_file)
     except Exception as e:
         print(f"Error running ranking pipeline: {e}", file=sys.stderr)
         sys.exit(1)

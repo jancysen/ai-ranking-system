@@ -220,3 +220,45 @@ def evaluate_notice_period(notice_days):
         return 50.0
     else:
         return 20.0
+
+
+# --- Semantic Similarity Functions ---
+import os
+
+_MODEL_INSTANCE = None
+
+def get_sentence_transformer(model_path="models/all-MiniLM-L6-v2"):
+    """
+    Lazy loads and returns the SentenceTransformer model from a local path.
+    """
+    global _MODEL_INSTANCE
+    if _MODEL_INSTANCE is None:
+        from sentence_transformers import SentenceTransformer
+        # Resolve path
+        if not os.path.exists(model_path):
+            print(f"Local model path {model_path} not found. Loading online all-MiniLM-L6-v2...")
+            _MODEL_INSTANCE = SentenceTransformer("all-MiniLM-L6-v2")
+        else:
+            print(f"Loading local model from {model_path}...")
+            _MODEL_INSTANCE = SentenceTransformer(model_path)
+    return _MODEL_INSTANCE
+
+def compute_semantic_similarity(profile_text, jd_text, model_path="models/all-MiniLM-L6-v2"):
+    """
+    Computes cosine similarity between profile text and job description.
+    Returns similarity score (float in range [0, 1]).
+    """
+    try:
+        from sentence_transformers import util
+        model = get_sentence_transformer(model_path)
+        # Encode
+        emb1 = model.encode(profile_text, convert_to_tensor=True)
+        emb2 = model.encode(jd_text, convert_to_tensor=True)
+        # Cosine similarity
+        similarity = util.cos_sim(emb1, emb2).item()
+        # Scale/normalize to [0, 1] range
+        return max(0.0, min(similarity, 1.0))
+    except Exception as e:
+        print(f"Error in semantic similarity calculation: {e}")
+        return 0.5  # Neutral fallback
+
