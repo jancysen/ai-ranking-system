@@ -10,7 +10,7 @@ team_members:
     email: "antigravity@example.com"
     role: "ML Engineer"
 
-github_repo: "https://github.com/your_username/your_repo"
+github_repo: "https://github.com/jancysen/ai-ranking-system"
 sandbox_link: "https://huggingface.co/spaces/your_username/redrob-ranker"
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
