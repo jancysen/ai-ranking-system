@@ -193,6 +193,10 @@ def generate_reasoning(candidate, jd, score, breakdown):
     response_time = signals.get("avg_response_time_hours", 24.0)
     github_score = signals.get("github_activity_score", -1)
     assessments = signals.get("skill_assessment_scores", {})
+    current_company = candidate.get("current_company", "")
+    current_company_size = candidate.get("current_company_size", "")
+    open_to_work = signals.get("open_to_work_flag", False)
+    completeness = signals.get("profile_completeness_score", 0)
     
     # 1. Identify key matching skills
     candidate_skill_names = {s["name"].lower() for s in skills}
@@ -234,6 +238,14 @@ def generate_reasoning(candidate, jd, score, breakdown):
         lead_clause = f"Educated at elite {edu_inst} ({edu_phrase}) with a strong engineering trajectory and {yoe:.1f} years of experience"
     elif response_rate > 0.75:
         lead_clause = f"Highly responsive candidate ({int(response_rate*100)}% response rate, {response_time:.1f}h avg response) with {yoe:.1f} years of experience"
+    elif open_to_work:
+        lead_clause = f"Active job seeker ready for immediate deployment with {yoe:.1f} years of experience as a {profile_title}"
+    elif completeness > 90:
+        lead_clause = f"Fully verified professional with a comprehensive profile and {yoe:.1f} years of experience as a {profile_title}"
+    elif current_company and current_company_size in ["10001+", "5001-10000", "1001-5000"]:
+        lead_clause = f"Experienced {profile_title} with {yoe:.1f} years of experience, currently at large enterprise {current_company}"
+    elif current_company and current_company_size in ["11-50", "51-200", "201-500"]:
+        lead_clause = f"Scrappy product engineer with {yoe:.1f} years of experience, currently at growing startup {current_company}"
     else:
         lead_clause = f"Competent {profile_title} with {yoe:.1f} years of experience"
 

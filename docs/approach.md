@@ -79,9 +79,9 @@ graph TD
 
 ---
 
-# Slide 7: Ablation Study & Weight Optimization
+# Slide 7: Internal Consistency Checks & Weight Optimization
 
-To justify our configurations, we performed ablation testing on the full 100K candidate pool. Since the 20-candidate ground truth is an *internal oracle set pending official release* (NOTE: Ground truth is pipeline-derived; official evaluation awaits judge labels), we also ran sensitivity stress-tests to verify robustness.
+To justify our configurations, we performed ablation testing on the full 100K candidate pool. The 20-candidate ground truth is used as an **internal oracle set for self-consistency testing** (Ground truth is pipeline-derived; official evaluation awaits judge labels). We also ran sensitivity stress-tests to verify robustness.
 
 ### Semantic Blend Weight Ablation (Stage 2)
 We ablated the Stage 2 blending weight on the full 100K candidate pool against our oracle ground truth:
@@ -96,9 +96,9 @@ We ablated the Stage 2 blending weight on the full 100K candidate pool against o
 
 ### Bounded Label Perturbation Sensitivity (Monte Carlo Stress Test)
 To stress-test our weights against labeling bias, we ran a Monte Carlo simulation (1,000 trials) randomly flipping 1, 2, or 3 labels in the ground truth set:
-* **1 Random Flip**: Mean NDCG@10 = **0.9789** (std = 0.0354)
-* **2 Random Flips**: Mean NDCG@10 = **0.9518** (std = 0.0531)
-* **3 Random Flips**: Mean NDCG@10 = **0.9195** (std = 0.0669)
+* **1 Random Flip**: Mean NDCG@10 = **0.9775** (std = 0.0366)
+* **2 Random Flips**: Mean NDCG@10 = **0.9501** (std = 0.0531)
+* **3 Random Flips**: Mean NDCG@10 = **0.9178** (std = 0.0671)
 
 *Conclusion: The pipeline scoring weights are extremely robust and ranking is stable even if 2-3 labels are flipped.*
 

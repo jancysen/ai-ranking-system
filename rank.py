@@ -24,6 +24,12 @@ def main():
         action="store_true",
         help="Run quickly on sample data (data/sample_candidates.json) for testing."
     )
+    parser.add_argument(
+        "--jd",
+        type=str,
+        default=None,
+        help="Path to custom job description text file to parse and rank against."
+    )
     
     args = parser.parse_args()
     
@@ -36,7 +42,7 @@ def main():
         print("Running pipeline on SAMPLE data...")
         
     try:
-        run_pipeline(candidates_file, output_file)
+        run_pipeline(candidates_file, output_file, jd_path=args.jd)
     except Exception as e:
         print(f"Error running ranking pipeline: {e}", file=sys.stderr)
         sys.exit(1)

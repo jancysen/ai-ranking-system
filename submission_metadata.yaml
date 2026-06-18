@@ -1,17 +1,24 @@
 # Redrob Hackathon — Submission Metadata
 team_name: "Team Antigravity"
+participant_id: "team_antigravity"
+tech_stack_summary: "Python, SentenceTransformers, Streamlit, PyYAML, ReportLab"
+approach_tag: "two-stage-hybrid-search-with-funnel-screening"
+
 primary_contact:
-  name: "Lead Developer"
-  email: "lead@example.com"
-  phone: "+91-9999999999"
+  name: "Jancy Sen"
+  email: "jancy.sen@example.com"
+  phone: "+91-9876543210"
 
 team_members:
+  - name: "Jancy Sen"
+    email: "jancy.sen@example.com"
+    role: "Lead ML & Search Architect"
   - name: "Antigravity AI"
     email: "antigravity@example.com"
-    role: "ML Engineer"
+    role: "Core ML Developer"
 
 github_repo: "https://github.com/jancysen/ai-ranking-system"
-sandbox_link: "https://huggingface.co/spaces/your_username/redrob-ranker"
+sandbox_link: "https://huggingface.co/spaces/jancysen/redrob-ranker"
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
 compute:

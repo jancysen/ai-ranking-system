@@ -144,6 +144,8 @@ def evaluate_location(candidate_loc, primary_locs, secondary_locs, willing_to_re
     return 20.0
 
 
+_EDU_PRESTIGE_MAPPING = None
+
 def evaluate_education(education_list):
     """
     Evaluates candidate's education prestige.
@@ -152,6 +154,21 @@ def evaluate_education(education_list):
     if not education_list:
         return 20.0
         
+    global _EDU_PRESTIGE_MAPPING
+    if _EDU_PRESTIGE_MAPPING is None:
+        try:
+            from src.utils import load_config
+            config = load_config()
+            _EDU_PRESTIGE_MAPPING = config.get("education_prestige_mappings", {
+                "tier_1": ["iit", "indian institute of technology", "bits pilani", "iisc"],
+                "tier_2": ["nit", "national institute of technology", "dtu", "delhi technological university", "nsit", "iiit", "vit", "vellore institute of technology"]
+            })
+        except Exception:
+            _EDU_PRESTIGE_MAPPING = {
+                "tier_1": ["iit", "indian institute of technology", "bits pilani", "iisc"],
+                "tier_2": ["nit", "national institute of technology", "dtu", "delhi technological university", "nsit", "iiit", "vit", "vellore institute of technology"]
+            }
+
     best_tier = "unknown"
     tier_ranks = {
         "tier_1": 4,
@@ -163,6 +180,27 @@ def evaluate_education(education_list):
     
     for edu in education_list:
         tier = edu.get("tier", "unknown")
+        
+        # If tier is unknown, check institution name mapping fallback
+        if tier == "unknown" or not tier:
+            inst = edu.get("institution", "").strip().lower()
+            if inst:
+                is_tier_1 = False
+                for kw in _EDU_PRESTIGE_MAPPING.get("tier_1", []):
+                    if kw in inst:
+                        is_tier_1 = True
+                        break
+                if is_tier_1:
+                    tier = "tier_1"
+                else:
+                    is_tier_2 = False
+                    for kw in _EDU_PRESTIGE_MAPPING.get("tier_2", []):
+                        if kw in inst:
+                            is_tier_2 = True
+                            break
+                    if is_tier_2:
+                        tier = "tier_2"
+                        
         if tier not in tier_ranks:
             tier = "unknown"
         if tier_ranks[tier] > tier_ranks[best_tier]:

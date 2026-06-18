@@ -100,7 +100,10 @@ def is_eligible(candidate, excluded_companies=None):
     current_title = profile.get("current_title", "")
     history = candidate.get("career_history", [])
     
-    # 1. Experience level: Target is 5-9 years, exclude if way out of range
+    # 1. Experience level: Target is 5-9 years.
+    # We apply a lower hard cutoff of 3.5 YOE (instead of the JD's 5.0 target) to keep adjacent,
+    # exceptional, fast-growing talent who might score lower on experience but rank high on skills.
+    # We also set an upper limit of 18.0 YOE to screen out candidates who are extremely overqualified.
     if yoe < 3.5:
         return False, f"insufficient_experience: yoe={yoe}"
     if yoe > 18.0:

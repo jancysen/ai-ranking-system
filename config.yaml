@@ -30,11 +30,6 @@ excluded_companies:
   - "hcl"
   - "hcltech"
   - "tech mahindra"
-  - "l&t"
-  - "lnt"
-  - "l&t technology services"
-  - "mindtree"
-  - "mphasis"
   - "cognizant technology solutions"
   - "wipro technologies"
   - "infosys technologies"
@@ -45,4 +40,33 @@ recency_multipliers:
   90: 1.05       # <= 90 days inactive
   180: 0.85      # <= 180 days inactive
   default: 0.50  # > 180 days inactive (default multiplier)
+
+# Top Indian Engineering Institutions for tier mapping fallback if unspecified
+education_prestige_mappings:
+  tier_1:
+    - "indian institute of technology"
+    - "iit"
+    - "bits pilani"
+    - "birla institute of technology and science"
+    - "indian institute of science"
+    - "iisc"
+  tier_2:
+    - "national institute of technology"
+    - "nit"
+    - "delhi technological university"
+    - "dtu"
+    - "netaji subhas institute of technology"
+    - "nsit"
+    - "iiit"
+    - "indian institute of information technology"
+    - "bits"
+    - "vit"
+    - "vellore institute of technology"
+    - "manipal institute of technology"
+    - "college of engineering, guindy"
+    - "jadavpur university"
+    - "anna university"
+    - "psg college of technology"
+    - "rv college of engineering"
+
 

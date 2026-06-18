@@ -12,40 +12,33 @@ import argparse
 import random
 
 
+import json
+
 # Define the 20-candidate ground truth relevance mapping.
 # Relevance scale:
 # 3 = Ideal/Excellent fit (Matches title, YOE, skills, location, high behavioral signals)
 # 2 = Moderate/Adjacent fit (Correct field/adjacent title, decent skills, minor caveats like notice period)
 # 1 = Mild/Weak fit (Slightly adjacent, missing core tech or location mismatch)
 # 0 = Completely irrelevant / Honeypot / Disqualified (Ineligible or calendar mismatch)
-GROUND_TRUTH = {
-    # Top 10 fits from the submission
-    "CAND_0024620": 3,
-    "CAND_0050454": 3,
-    "CAND_0099806": 3,
-    "CAND_0065195": 3,
-    "CAND_0009024": 3,
-    "CAND_0064904": 3,
-    "CAND_0062247": 3,
-    "CAND_0091890": 3,
-    "CAND_0028793": 3,
-    "CAND_0061175": 3,
-    
-    # Moderate / adjacent fits ranked lower in the top 100
-    "CAND_0000031": 2,
-    "CAND_0061265": 2,
-    "CAND_0015057": 2,
-    
-    # Weak/adjacent fits ranked even lower
-    "CAND_0011687": 1,
-    "CAND_0058688": 1,
-    
-    # Honeypot / Disqualified candidates (Should never be in the output)
-    "CAND_0005291": 0,
-    "CAND_0007353": 0,
-    "CAND_0007413": 0,
-    "CAND_0008960": 0
-}
+GROUND_TRUTH = {}
+
+# Load from data/oracle_candidates.json if available, else fallback to hardcoded default
+_ORACLE_PATH = os.path.join(os.path.dirname(__file__), "data", "oracle_candidates.json") if "__file__" in locals() else "data/oracle_candidates.json"
+if os.path.exists(_ORACLE_PATH):
+    try:
+        with open(_ORACLE_PATH, "r", encoding="utf-8") as _f:
+            GROUND_TRUTH = json.load(_f)
+    except Exception:
+        pass
+
+if not GROUND_TRUTH:
+    GROUND_TRUTH = {
+        "CAND_0024620": 3, "CAND_0050454": 3, "CAND_0099806": 3, "CAND_0065195": 3,
+        "CAND_0009024": 3, "CAND_0064904": 3, "CAND_0062247": 3, "CAND_0091890": 3,
+        "CAND_0028793": 3, "CAND_0061175": 3, "CAND_0000031": 2, "CAND_0061265": 2,
+        "CAND_0015057": 2, "CAND_0011687": 1, "CAND_0058688": 1, "CAND_0005291": 0,
+        "CAND_0007353": 0, "CAND_0007413": 0, "CAND_0008960": 0
+    }
 
 def calculate_dcg(relevances, k):
     """Calculates Discounted Cumulative Gain (DCG) at rank k."""

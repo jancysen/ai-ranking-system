@@ -7,7 +7,7 @@ from src.jd_parser import get_target_jd
 from src.candidate_parser import check_honeypot, is_eligible, parse_candidate
 from src.scorer import score_candidate, generate_reasoning
 
-def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
+def run_pipeline(candidates_path, output_path, config_path="config.yaml", jd_path=None):
     """
     Orchestrates the candidate ranking pipeline from end to end.
     """
@@ -17,6 +17,8 @@ def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
     print("="*60)
     print(f"Candidates file: {candidates_path}")
     print(f"Output file: {output_path}")
+    if jd_path:
+        print(f"Custom JD file:  {jd_path}")
     
     # 1. Load config and job description
     config = load_config(config_path)
@@ -34,7 +36,16 @@ def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
 
     
     # Get the parsed job description
-    jd = get_target_jd()
+    if jd_path:
+        from src.jd_parser import parse_jd
+        if not os.path.exists(jd_path):
+            raise FileNotFoundError(f"Custom JD file not found: {jd_path}")
+        print(f"Reading custom JD from: {jd_path}")
+        with open(jd_path, "r", encoding="utf-8") as f:
+            jd_text = f.read()
+        jd = parse_jd(jd_text)
+    else:
+        jd = get_target_jd()
     print(f"Target JD: {jd['title']} at {jd['company']}")
     
     # 2. Process candidate pool line by line to keep memory low
@@ -152,6 +163,7 @@ def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
                 # Scale similarity to [0, 1]
                 similarity = max(0.0, min(similarity, 1.0))
                 
+                # Note: both item["score"] (Stage 1 score) and similarity are on the [0.0, 1.0] scale.
                 # Update score: blend weighted rule-based fit and semantic similarity match
                 combined_score = (item["score"] * (1.0 - semantic_weight)) + (similarity * semantic_weight)
                 item["score"] = combined_score

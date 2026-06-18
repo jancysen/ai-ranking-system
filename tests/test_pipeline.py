@@ -97,6 +97,28 @@ def test_eligibility_checks(sample_valid_candidate):
     # Valid candidate should pass
     is_elig, reason = is_eligible(sample_valid_candidate)
     assert is_elig
+
+def test_consulting_only_filter_edge_cases(sample_valid_candidate):
+    from src.candidate_parser import is_eligible
+    
+    excluded = ["tcs", "infosys", "wipro"]
+    
+    # Case A: Candidate has ONLY worked at TCS & Infosys (should be False)
+    sample_valid_candidate["career_history"] = [
+        {"company": "TCS", "title": "Developer", "is_current": False},
+        {"company": "Infosys Ltd", "title": "Senior Developer", "is_current": True}
+    ]
+    is_elig, reason = is_eligible(sample_valid_candidate, excluded_companies=excluded)
+    assert not is_elig
+    assert "only_worked_at_consulting_firms" in reason
+    
+    # Case B: Candidate worked at TCS but also at Swiggy (should be True)
+    sample_valid_candidate["career_history"] = [
+        {"company": "TCS", "title": "Developer", "is_current": False},
+        {"company": "Swiggy", "title": "Software Engineer", "is_current": True}
+    ]
+    is_elig, reason = is_eligible(sample_valid_candidate, excluded_companies=excluded)
+    assert is_elig
     
     # Too junior
     sample_valid_candidate["profile"]["years_of_experience"] = 2.0
@@ -296,6 +318,21 @@ def test_dynamic_recency_multiplier():
     _, _, mult_default, _ = score_candidate(cand_default, jd, weights, recency_config=custom_recency)
     
     assert mult_30 > mult_90 > mult_180 > mult_default
+
+def test_education_fallback_mapping():
+    from src.matcher import evaluate_education
+    
+    # 1. Candidate with unspecified tier but institution name contains IIT (should resolve to tier_1 -> 100.0 score)
+    edu_iit = [{"institution": "IIT Bombay", "degree": "B.Tech", "tier": "unknown"}]
+    assert evaluate_education(edu_iit) == 100.0
+    
+    # 2. Candidate with unspecified tier but institution name contains NIT (should resolve to tier_2 -> 70.0 score)
+    edu_nit = [{"institution": "NIT Trichy", "degree": "M.Tech", "tier": "unknown"}]
+    assert evaluate_education(edu_nit) == 70.0
+    
+    # 3. Unknown institution with unspecified tier (should resolve to unknown -> 20.0 score)
+    edu_unknown = [{"institution": "Random Engineering College", "degree": "B.E.", "tier": "unknown"}]
+    assert evaluate_education(edu_unknown) == 20.0
 
 
 
