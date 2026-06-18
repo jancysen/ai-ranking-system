@@ -81,7 +81,7 @@ graph TD
 
 # Slide 7: Ablation Study & Weight Optimization
 
-To justify our configurations, we performed ablation testing on the full 100K candidate pool. Since the 20-candidate ground truth is an *internal oracle set pending official release*, we also ran sensitivity stress-tests to verify robustness.
+To justify our configurations, we performed ablation testing on the full 100K candidate pool. Since the 20-candidate ground truth is an *internal oracle set pending official release* (NOTE: Ground truth is pipeline-derived; official evaluation awaits judge labels), we also ran sensitivity stress-tests to verify robustness.
 
 ### Semantic Blend Weight Ablation (Stage 2)
 We ablated the Stage 2 blending weight on the full 100K candidate pool against our oracle ground truth:

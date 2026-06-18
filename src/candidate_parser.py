@@ -79,8 +79,9 @@ def check_honeypot(candidate):
                 reasons.append(f"yoe_exceeds_post_grad_years: yoe={yoe}, graduated={earliest_grad}")
 
     # 5. Assessment Mismatch (expert/advanced but fails platform skill test)
+    skills_by_name = {s["name"].lower(): s for s in skills if "name" in s}
     for sname, score in assessments.items():
-        matching_skill = next((s for s in skills if s["name"].lower() == sname.lower()), None)
+        matching_skill = skills_by_name.get(sname.lower())
         if matching_skill:
             prof = matching_skill.get("proficiency")
             if prof in ["expert", "advanced"] and score < 25.0:
@@ -142,13 +143,18 @@ def is_relevant_title(title):
         "marketing manager", "digital marketer", "social media manager", "public relations"
     ]
     
-    # Check if any blacklist item is in the title
+    has_blacklist = False
     for item in blacklist:
         if item in title_lower:
-            # Check for saving grace tech keywords
-            if "software" in title_lower or "machine learning" in title_lower or "ai" in title_lower or "developer" in title_lower:
-                continue
-            return False
+            has_blacklist = True
+            break
+            
+    if has_blacklist:
+        # Check for saving grace tech keywords
+        saving_graces = ["software", "machine learning", "ai", "developer"]
+        if any(grace in title_lower for grace in saving_graces):
+            return True
+        return False
             
     return True
 

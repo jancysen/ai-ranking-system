@@ -234,9 +234,13 @@ def get_sentence_transformer(model_path="models/all-MiniLM-L6-v2"):
     global _MODEL_INSTANCE
     if _MODEL_INSTANCE is None:
         from sentence_transformers import SentenceTransformer
-        # Resolve path
-        if not os.path.exists(model_path):
-            print(f"Local model path {model_path} not found. Loading online all-MiniLM-L6-v2...")
+        # Resolve path - check if model files exist inside the path
+        has_model_file = False
+        if os.path.exists(model_path):
+            has_model_file = os.path.exists(os.path.join(model_path, "model.safetensors")) or os.path.exists(os.path.join(model_path, "pytorch_model.bin"))
+            
+        if not os.path.exists(model_path) or not has_model_file:
+            print(f"Local model path {model_path} or model weights not found. Loading online all-MiniLM-L6-v2...")
             _MODEL_INSTANCE = SentenceTransformer("all-MiniLM-L6-v2")
         else:
             print(f"Loading local model from {model_path}...")

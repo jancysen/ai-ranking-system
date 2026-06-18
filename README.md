@@ -45,7 +45,7 @@ Generates natural-sounding 1-2 sentence notes for the top 100 candidates. The ge
 
 ## Ablation Study & Weight Optimization
 
-To justify our configuration weights, we performed ablation testing on the full candidate pool. Since the 20-candidate ground truth is an *internal oracle set pending official release*, we also ran sensitivity stress-tests to verify robustness.
+To justify our configuration weights, we performed ablation testing on the full candidate pool. Since the 20-candidate ground truth is an *internal oracle set pending official release* (NOTE: Ground truth is pipeline-derived; official evaluation awaits judge labels), we also ran sensitivity stress-tests to verify robustness.
 
 ### 1. Base Feature Weight Ablation
 We compared our balanced configuration against equal-weight and skill-heavy baselines on the oracle set:

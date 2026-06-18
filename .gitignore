@@ -25,3 +25,7 @@ Thumbs.db
 *.log
 scratch/
 outputs/sample_ranked.csv
+
+# Model Weights
+models/all-MiniLM-L6-v2/model.safetensors
+models/all-MiniLM-L6-v2/pytorch_model.bin

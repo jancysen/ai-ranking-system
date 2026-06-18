@@ -38,3 +38,11 @@ excluded_companies:
   - "cognizant technology solutions"
   - "wipro technologies"
   - "infosys technologies"
+
+# Recency multipliers for candidate ranking (days inactive thresholds mapped to multipliers)
+recency_multipliers:
+  30: 1.15       # <= 30 days inactive
+  90: 1.05       # <= 90 days inactive
+  180: 0.85      # <= 180 days inactive
+  default: 0.50  # > 180 days inactive (default multiplier)
+

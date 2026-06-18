@@ -44,8 +44,7 @@ GROUND_TRUTH = {
     "CAND_0005291": 0,
     "CAND_0007353": 0,
     "CAND_0007413": 0,
-    "CAND_0008960": 0,
-    "CAND_0000000": 0  # Control dummy
+    "CAND_0008960": 0
 }
 
 def calculate_dcg(relevances, k):
@@ -132,6 +131,8 @@ def evaluate_submission(csv_path):
     print(f"NDCG@10:          {ndcg_10:.4f}  (Ideal: 1.0000 - Top 10 fits are perfect)")
     print(f"NDCG@50:          {ndcg_50:.4f}  (Measures precision across candidate tiers)")
     print(f"MRR (rel>=2):     {mrr:.4f}  (Reciprocal rank of first excellent/moderate fit)")
+    print("-" * 60)
+    print("NOTE: Ground truth is pipeline-derived; official evaluation awaits judge labels.")
     print("-" * 60)
     
     if leaked_honeypots:

@@ -230,5 +230,73 @@ def test_evaluation_metrics():
     assert calculate_mrr([0, 0, 1, 0], threshold=2) == 0.0
     assert calculate_mrr([3, 0, 0, 0], threshold=2) == 1.0
 
+def test_title_blacklist_bug_fix():
+    from src.candidate_parser import is_relevant_title
+    
+    # 1. Title that has blacklist items with no saving grace (should be False)
+    assert not is_relevant_title("Civil Engineer and HR Manager")
+    assert not is_relevant_title("HR Manager and Writer")
+    
+    # 2. Title that has blacklist items but also saving grace (should be True)
+    assert is_relevant_title("UI Designer and Software Developer")
+    assert is_relevant_title("Software Developer and Civil Engineer")
+    
+    # 3. Standard valid titles
+    assert is_relevant_title("Backend Engineer")
+    assert is_relevant_title("Machine Learning Scientist")
+
+def test_dynamic_recency_multiplier():
+    from src.scorer import score_candidate
+    from src.candidate_parser import REFERENCE_DATE
+    from datetime import timedelta
+    
+    jd = get_target_jd()
+    weights = {
+        "skills": 0.35,
+        "title": 0.25,
+        "experience": 0.15,
+        "education": 0.10,
+        "location": 0.10,
+        "notice_period": 0.05
+    }
+    
+    def make_candidate_with_date(date_str):
+        return {
+            "candidate_id": "CAND_TEST",
+            "current_title": "Senior AI Engineer",
+            "years_of_experience": 7.0,
+            "skills": [{"name": "Python", "proficiency": "expert", "duration_months": 24}],
+            "education": [],
+            "redrob_signals": {
+                "last_active_date": date_str,
+                "recruiter_response_rate": 0.8,
+                "github_activity_score": 10,
+                "open_to_work_flag": False,
+                "notice_period_days": 15
+            }
+        }
+        
+    # Standard configuration
+    custom_recency = {
+        "30": 1.15,
+        "90": 1.05,
+        "180": 0.85,
+        "default": 0.50
+    }
+    
+    # Test cases matching different thresholds
+    cand_30 = make_candidate_with_date((REFERENCE_DATE - timedelta(days=20)).strftime("%Y-%m-%d"))
+    cand_90 = make_candidate_with_date((REFERENCE_DATE - timedelta(days=70)).strftime("%Y-%m-%d"))
+    cand_180 = make_candidate_with_date((REFERENCE_DATE - timedelta(days=150)).strftime("%Y-%m-%d"))
+    cand_default = make_candidate_with_date((REFERENCE_DATE - timedelta(days=200)).strftime("%Y-%m-%d"))
+    
+    _, _, mult_30, _ = score_candidate(cand_30, jd, weights, recency_config=custom_recency)
+    _, _, mult_90, _ = score_candidate(cand_90, jd, weights, recency_config=custom_recency)
+    _, _, mult_180, _ = score_candidate(cand_180, jd, weights, recency_config=custom_recency)
+    _, _, mult_default, _ = score_candidate(cand_default, jd, weights, recency_config=custom_recency)
+    
+    assert mult_30 > mult_90 > mult_180 > mult_default
+
+
 
 

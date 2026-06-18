@@ -10,7 +10,7 @@ from src.matcher import (
     evaluate_notice_period
 )
 
-def score_candidate(candidate, jd, weights):
+def score_candidate(candidate, jd, weights, recency_config=None):
     """
     Computes candidate overall score.
     Returns (final_score, base_score, behavioral_multiplier, breakdown_dict).
@@ -86,14 +86,43 @@ def score_candidate(candidate, jd, weights):
         last_active = parse_date(last_active_str)
         if last_active:
             days_inactive = (REFERENCE_DATE - last_active).days
-            if days_inactive <= 30:
-                bm_recency = 1.15
-            elif days_inactive <= 90:
-                bm_recency = 1.05
-            elif days_inactive <= 180:
-                bm_recency = 0.85
-            else:
-                bm_recency = 0.50
+            
+            # Resolve recency configuration
+            if recency_config is None:
+                try:
+                    from src.utils import load_config
+                    config = load_config()
+                    recency_config = config.get("recency_multipliers", {
+                        30: 1.15,
+                        90: 1.05,
+                        180: 0.85,
+                        "default": 0.50
+                    })
+                except Exception:
+                    recency_config = {
+                        30: 1.15,
+                        90: 1.05,
+                        180: 0.85,
+                        "default": 0.50
+                    }
+            
+            # Normalize keys to allow both integer thresholds and defaults
+            standard_recency = {}
+            for k, v in recency_config.items():
+                if str(k).isdigit():
+                    standard_recency[int(k)] = float(v)
+                else:
+                    standard_recency[k] = float(v)
+            
+            thresholds = sorted([k for k in standard_recency.keys() if isinstance(k, int)])
+            matched = False
+            for t in thresholds:
+                if days_inactive <= t:
+                    bm_recency = standard_recency[t]
+                    matched = True
+                    break
+            if not matched:
+                bm_recency = standard_recency.get("default", 0.50)
                 
     bm_open = 1.05 if signals.get("open_to_work_flag", False) else 0.95
     
@@ -193,13 +222,13 @@ def generate_reasoning(candidate, jd, score, breakdown):
     # 4. Construct lead clause based on top differentiator
     lead_clause = ""
     if github_score > 45:
-        lead_clause = f"Active open-source contributor with a high GitHub activity score of {github_score:.0f} and {yoe:.1f} years as a {profile_title}"
+        lead_clause = f"Active open-source contributor with a high GitHub activity score of {github_score:.0f} and {yoe:.1f} years of experience as a {profile_title}"
     elif top_assess_score > 75 and top_assess_skill:
-        lead_clause = f"Proven technical expert with a {top_assess_score:.0f}% score on the Redrob {top_assess_skill} assessment and {yoe:.1f} years experience"
+        lead_clause = f"Proven technical expert with a {top_assess_score:.0f}% score on the Redrob {top_assess_skill} assessment and {yoe:.1f} years of experience"
     elif edu_phrase and edu_inst:
-        lead_clause = f"Educated at elite {edu_inst} ({edu_phrase}) with a strong {yoe:.1f}-year engineering trajectory"
+        lead_clause = f"Educated at elite {edu_inst} ({edu_phrase}) with a strong engineering trajectory and {yoe:.1f} years of experience"
     elif response_rate > 0.75:
-        lead_clause = f"Highly responsive candidate ({int(response_rate*100)}% response rate, {response_time:.1f}h avg response) with {yoe:.1f} years experience"
+        lead_clause = f"Highly responsive candidate ({int(response_rate*100)}% response rate, {response_time:.1f}h avg response) with {yoe:.1f} years of experience"
     else:
         lead_clause = f"Competent {profile_title} with {yoe:.1f} years of experience"
 

@@ -30,6 +30,7 @@ def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
     })
     excluded_companies = config.get("excluded_companies", [])
     semantic_weight = config.get("semantic_re_rank_weight", 0.2)
+    recency_config = config.get("recency_multipliers")
 
     
     # Get the parsed job description
@@ -90,7 +91,7 @@ def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
             passed_count += 1
             
             # D. Score candidate
-            score, base_score, behavioral_multiplier, breakdown = score_candidate(cand, jd, weights)
+            score, base_score, behavioral_multiplier, breakdown = score_candidate(cand, jd, weights, recency_config=recency_config)
             
             scored_candidates.append({
                 "candidate_id": cand["candidate_id"],
