@@ -8,6 +8,9 @@ import os
 import csv
 import math
 import sys
+import argparse
+import random
+
 
 # Define the 20-candidate ground truth relevance mapping.
 # Relevance scale:
@@ -137,8 +140,87 @@ def evaluate_submission(csv_path):
         print("Honeypot/Disqualification Filter: PASSED (0% leak rate in top 100)")
     print("=" * 60)
 
+def perturb_label(val):
+    """Perturb a label to another value in [0, 1, 2, 3]."""
+    choices = [0, 1, 2, 3]
+    if val in choices:
+        choices.remove(val)
+    return random.choice(choices)
+
+def run_sensitivity_analysis(csv_path, trials=1000):
+    if not os.path.exists(csv_path):
+        print(f"Error: Submission file '{csv_path}' not found.")
+        sys.exit(1)
+
+    ranked_ids = []
+    try:
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            header = next(reader)
+            cid_idx = header.index("candidate_id")
+            for row in reader:
+                if row:
+                    ranked_ids.append(row[cid_idx].strip())
+    except Exception as e:
+        print(f"Error reading CSV file: {e}")
+        sys.exit(1)
+
+    print("=" * 60)
+    print("        LEAVE-ONE-OUT/MONTE CARLO SENSITIVITY ANALYSIS")
+    print("=" * 60)
+    print(f"Evaluated File: {csv_path}")
+    print(f"Total Trials:   {trials}")
+    print("-" * 60)
+    
+    random.seed(42)  # Ensure reproducibility
+    
+    for num_flips in [1, 2, 3]:
+        ndcg10_results = []
+        ndcg50_results = []
+        
+        for _ in range(trials):
+            perturbed_gt = GROUND_TRUTH.copy()
+            keys_to_perturb = random.sample(list(GROUND_TRUTH.keys()), num_flips)
+            for key in keys_to_perturb:
+                perturbed_gt[key] = perturb_label(GROUND_TRUTH[key])
+                
+            actual_relevances = [perturbed_gt.get(cid, 0) for cid in ranked_ids]
+            ideal_pool = [rel for rel in perturbed_gt.values() if rel > 0]
+            if len(ideal_pool) < len(actual_relevances):
+                ideal_pool += [0] * (len(actual_relevances) - len(ideal_pool))
+                
+            ndcg_10 = calculate_ndcg(actual_relevances, 10)
+            ndcg_50 = calculate_ndcg(actual_relevances, 50)
+            
+            ndcg10_results.append(ndcg_10)
+            ndcg50_results.append(ndcg_50)
+            
+        mean_10 = sum(ndcg10_results) / trials
+        mean_50 = sum(ndcg50_results) / trials
+        
+        var_10 = sum((x - mean_10) ** 2 for x in ndcg10_results) / trials
+        std_10 = math.sqrt(var_10)
+        var_50 = sum((x - mean_50) ** 2 for x in ndcg50_results) / trials
+        std_50 = math.sqrt(var_50)
+        
+        print(f"Perturbing {num_flips} random label(s) per trial:")
+        print(f"  NDCG@10: mean = {mean_10:.4f}, std = {std_10:.4f}, min = {min(ndcg10_results):.4f}, max = {max(ndcg10_results):.4f}")
+        print(f"  NDCG@50: mean = {mean_50:.4f}, std = {std_50:.4f}, min = {min(ndcg50_results):.4f}, max = {max(ndcg50_results):.4f}")
+        print("-" * 60)
+
 if __name__ == "__main__":
-    csv_file = "outputs/team_antigravity.csv"
-    if len(sys.argv) > 1:
-        csv_file = sys.argv[1]
-    evaluate_submission(csv_file)
+    parser = argparse.ArgumentParser(description="Evaluate submission CSV against ground truth.")
+    parser.add_argument("csv_path", nargs="?", default="outputs/team_antigravity.csv",
+                        help="Path to the submission CSV file (default: outputs/team_antigravity.csv)")
+    parser.add_argument("-s", "--sensitivity", action="store_true",
+                        help="Run Monte Carlo sensitivity analysis of label flips")
+    parser.add_argument("--trials", type=int, default=1000,
+                        help="Number of trials for sensitivity analysis (default: 1000)")
+    
+    args = parser.parse_args()
+    
+    if args.sensitivity:
+        run_sensitivity_analysis(args.csv_path, trials=args.trials)
+    else:
+        evaluate_submission(args.csv_path)
+

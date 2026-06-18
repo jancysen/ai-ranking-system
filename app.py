@@ -76,8 +76,11 @@ weights = {
     "notice_period": w_notice / weights_sum
 }
 
-# 3. Model path
 use_semantic = st.sidebar.checkbox("Enable Stage-2 Semantic Re-ranking", value=True)
+semantic_weight = 0.20
+if use_semantic:
+    semantic_weight = st.sidebar.slider("Semantic Blend Weight (Stage-2)", 0.0, 1.0, 0.20, 0.05)
+
 
 # Main Panel layout
 col_jd, col_results = st.columns([1, 2])
@@ -188,9 +191,10 @@ with col_results:
                 # Compute local or online cosine sim
                 sem_sim = compute_semantic_similarity(cand_text, jd_semantic_text)
                 
-                # Combine: 80% original score, 20% semantic similarity
-                combined_score = (item["score"] * 0.8) + (sem_sim * 0.2)
+                # Combine: blend original score and semantic similarity
+                combined_score = (item["score"] * (1.0 - semantic_weight)) + (sem_sim * semantic_weight)
                 item["score"] = combined_score
+
                 item["breakdown"]["semantic_similarity"] = sem_sim
                 
             # Re-sort

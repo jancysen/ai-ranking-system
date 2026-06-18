@@ -29,6 +29,8 @@ def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
         "notice_period": 0.05
     })
     excluded_companies = config.get("excluded_companies", [])
+    semantic_weight = config.get("semantic_re_rank_weight", 0.2)
+
     
     # Get the parsed job description
     jd = get_target_jd()
@@ -149,9 +151,10 @@ def run_pipeline(candidates_path, output_path, config_path="config.yaml"):
                 # Scale similarity to [0, 1]
                 similarity = max(0.0, min(similarity, 1.0))
                 
-                # Update score: 80% weighted rule-based fit, 20% semantic similarity match
-                combined_score = (item["score"] * 0.8) + (similarity * 0.2)
+                # Update score: blend weighted rule-based fit and semantic similarity match
+                combined_score = (item["score"] * (1.0 - semantic_weight)) + (similarity * semantic_weight)
                 item["score"] = combined_score
+
                 item["breakdown"]["semantic_similarity"] = similarity
                 
             print(f"Semantic re-ranking completed in {time.time() - re_rank_start:.2f} seconds.")
