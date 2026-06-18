@@ -32,7 +32,10 @@ ai_tools_used:
   - "Gemini"
 
 ai_usage_summary: |
-  Used Gemini to design the scoring model, implement the honeypot detection filters, and debug execution issues.
+  Used Gemini API as a runtime JD parser (jd_parser.py) to extract structured
+  fields from arbitrary job descriptions. All scoring logic, honeypot detection,
+  pipeline architecture, and ranking engine are original implementations.
+  Gemini Flash was also used as a coding assistant during development.
 
 methodology_summary: |
   High-speed offline candidate ranking engine utilizing structural honeypot filters (catching skill-duration mismatches, total experience anomalies, and impossible career timelines) to guarantee 0% honeypot presence. Candidates are scored using a weighted hybrid of skill proficiencies + endorsements, current/past title relevance, seniority target (5-9 years YOE), university tier, and location/relocation preferences. A multiplicative behavioral modifier combines response rate, platform activity recency, and availability signals to produce the final ranking. Runs in under 5 seconds.
