@@ -10,6 +10,8 @@ from src.matcher import (
     evaluate_notice_period
 )
 
+_DEFAULT_RECENCY_CONFIG = None
+
 def score_candidate(candidate, jd, weights, recency_config=None):
     """
     Computes candidate overall score.
@@ -89,22 +91,25 @@ def score_candidate(candidate, jd, weights, recency_config=None):
             
             # Resolve recency configuration
             if recency_config is None:
-                try:
-                    from src.utils import load_config
-                    config = load_config()
-                    recency_config = config.get("recency_multipliers", {
-                        30: 1.15,
-                        90: 1.05,
-                        180: 0.85,
-                        "default": 0.50
-                    })
-                except Exception:
-                    recency_config = {
-                        30: 1.15,
-                        90: 1.05,
-                        180: 0.85,
-                        "default": 0.50
-                    }
+                global _DEFAULT_RECENCY_CONFIG
+                if _DEFAULT_RECENCY_CONFIG is None:
+                    try:
+                        from src.utils import load_config
+                        config = load_config()
+                        _DEFAULT_RECENCY_CONFIG = config.get("recency_multipliers", {
+                            30: 1.15,
+                            90: 1.05,
+                            180: 0.85,
+                            "default": 0.50
+                        })
+                    except Exception:
+                        _DEFAULT_RECENCY_CONFIG = {
+                            30: 1.15,
+                            90: 1.05,
+                            180: 0.85,
+                            "default": 0.50
+                        }
+                recency_config = _DEFAULT_RECENCY_CONFIG
             
             # Normalize keys to allow both integer thresholds and defaults
             standard_recency = {}
