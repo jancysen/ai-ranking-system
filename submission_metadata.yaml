@@ -13,9 +13,6 @@ team_members:
   - name: "Jancy Sen"
     email: "jancysen@gmail.com"
     role: "Lead ML & Search Architect"
-  - name: "Antigravity AI"
-    email: "antigravity@example.com"
-    role: "Core ML Developer"
 
 github_repo: "https://github.com/jancysen/ai-ranking-system"
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
