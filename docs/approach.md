@@ -75,7 +75,7 @@ graph TD
 * **Zero Hallucination**: Generated reasonings pull data directly from candidate records (exact YOE, current title, matched skills, location, and notice period).
 * **Connection to JD**: Focuses on the candidate's alignment with target engineering needs (e.g. backend, embeddings, vector search) and availability details.
 * **Acknowledgement of Gaps**: Explicitly mentions limitations like longer notice periods (e.g. "90-day notice") or location adjustments to build recruiter trust.
-* **High Variety**: Utilizes multiple scoring-dependent templates selected deterministically based on candidate ID to ensure natural, slide-friendly notes without duplication.
+* **High Variety**: Utilizes multiple scoring-dependent templates selected based on the candidate's top behavioral signal to ensure natural, slide-friendly notes without duplication.
 
 ---
 
@@ -93,6 +93,8 @@ We ablated the Stage 2 blending weight on the full 100K candidate pool against o
 | **0.2** (Config C) | **0.8** | **1.0000** | **0.9459** | **1.0000** | **Optimal balance of structured criteria and semantic context.** |
 | **0.5** | 0.5 | 0.9306 | 0.9080 | 1.0000 | Over-indexes on semantic match, bypassing hard constraints. |
 | **1.0** (Semantic-only)| 0.0 | 0.4085 | 0.7481 | 1.0000 | Ignores critical constraints (e.g. YOE targets, location, notice). |
+
+*Note on Selection:* We chose 0.2 over 0.1 for greater semantic generalizability on unseen JDs where exact keyword overlap is lower.
 
 ### Bounded Label Perturbation Sensitivity (Monte Carlo Stress Test)
 To stress-test our weights against labeling bias, we ran a Monte Carlo simulation (1,000 trials) randomly flipping 1, 2, or 3 labels in the ground truth set:

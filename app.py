@@ -184,18 +184,31 @@ with col_results:
         if use_semantic and scored_candidates:
             st.write("Running Stage-2 Semantic Re-ranking on top candidates...")
             top_subset = scored_candidates[:50]
-            jd_semantic_text = f"{parsed_jd['title']} {' '.join(parsed_jd['core_required_skills'])} {' '.join(parsed_jd['preferred_skills'])}"
-            
-            for item in top_subset:
-                cand_text = f"{item['title']} {item['parsed_record'].get('headline', '')} {item['parsed_record'].get('summary', '')}"
-                # Compute local or online cosine sim
-                sem_sim = compute_semantic_similarity(cand_text, jd_semantic_text)
+            try:
+                from src.matcher import get_sentence_transformer
+                from sentence_transformers import util
                 
-                # Combine: blend original score and semantic similarity
-                combined_score = (item["score"] * (1.0 - semantic_weight)) + (sem_sim * semantic_weight)
-                item["score"] = combined_score
-
-                item["breakdown"]["semantic_similarity"] = sem_sim
+                model = get_sentence_transformer("models/all-MiniLM-L6-v2")
+                jd_semantic_text = f"{parsed_jd['title']}. Core requirements: {', '.join(parsed_jd['core_required_skills'])}. Nice-to-haves: {', '.join(parsed_jd['preferred_skills'])}."
+                jd_emb = model.encode(jd_semantic_text, convert_to_tensor=True)
+                
+                profile_texts = []
+                for item in top_subset:
+                    cand = item["parsed_record"]
+                    profile_text = f"{item['title']}. Headline: {cand.get('headline', '')}. Summary: {cand.get('summary', '')}."
+                    profile_texts.append(profile_text)
+                    
+                cand_embs = model.encode(profile_texts, convert_to_tensor=True, show_progress_bar=False)
+                similarities = util.cos_sim(cand_embs, jd_emb)
+                
+                for idx, item in enumerate(top_subset):
+                    sem_sim = similarities[idx].item()
+                    sem_sim = max(0.0, min(sem_sim, 1.0))
+                    combined_score = (item["score"] * (1.0 - semantic_weight)) + (sem_sim * semantic_weight)
+                    item["score"] = combined_score
+                    item["breakdown"]["semantic_similarity"] = sem_sim
+            except Exception as e:
+                st.warning(f"Semantic re-ranking failed: {e}")
                 
             # Re-sort
             scored_candidates.sort(key=lambda x: (-x["score"], x["candidate_id"]))

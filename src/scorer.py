@@ -197,6 +197,7 @@ def generate_reasoning(candidate, jd, score, breakdown):
     current_company_size = candidate.get("current_company_size", "")
     open_to_work = signals.get("open_to_work_flag", False)
     completeness = signals.get("profile_completeness_score", 0)
+    willing_relocate = signals.get("willing_to_relocate", False)
     
     # 1. Identify key matching skills
     candidate_skill_names = {s["name"].lower() for s in skills}
@@ -230,7 +231,7 @@ def generate_reasoning(candidate, jd, score, breakdown):
 
     # 4. Construct lead clause based on top differentiator
     lead_clause = ""
-    if github_score > 45:
+    if github_score > 60:
         lead_clause = f"Active open-source contributor with a high GitHub activity score of {github_score:.0f} and {yoe:.1f} years of experience as a {profile_title}"
     elif top_assess_score > 75 and top_assess_skill:
         lead_clause = f"Proven technical expert with a {top_assess_score:.0f}% score on the Redrob {top_assess_skill} assessment and {yoe:.1f} years of experience"
@@ -256,6 +257,13 @@ def generate_reasoning(candidate, jd, score, breakdown):
     logistics_parts = []
     if location:
         logistics_parts.append(f"based in {location}")
+        
+        # Add open to relocation note if candidate is willing to relocate and not in Noida/Pune primary locations
+        primary_locs_lower = [l.lower() for l in jd.get("primary_locations", [])]
+        is_local = any(loc in location.lower() for loc in primary_locs_lower)
+        if willing_relocate and not is_local:
+            logistics_parts.append("open to relocation")
+            
     if notice <= 30:
         logistics_parts.append("immediately available (<=30d notice)")
     else:
@@ -270,7 +278,7 @@ def generate_reasoning(candidate, jd, score, breakdown):
     elif yoe > jd["max_experience"] + 3:
         gap_note = " (Note: experience is significantly above target range)"
     elif yoe < jd["min_experience"]:
-        gap_note = " (Note: candidate is slightly more junior than target)"
+        gap_note = " (Slightly below seniority target — strong technical fit compensates)"
 
     # Combine
     reasoning = f"{lead_clause}{middle_clause}{logistics_clause}{gap_note}."
